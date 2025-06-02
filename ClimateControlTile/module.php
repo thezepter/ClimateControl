@@ -26,6 +26,9 @@ class ClimateControlTile extends IPSModule
         $this->RegisterVariableBoolean('TempDown', 'Temperatur -', '~Switch', 2);
         $this->EnableAction('TempUp');
         $this->EnableAction('TempDown');
+        
+        // WebHook für HTML-Steuerung registrieren
+        $this->RegisterHook('/hook/climatecontrol' . $this->InstanceID);
     }
 
     public function ApplyChanges()
@@ -94,6 +97,27 @@ class ClimateControlTile extends IPSModule
         
         // HTML nach Aktion aktualisieren
         $this->UpdateHTMLContent();
+    }
+
+    protected function ProcessHookData()
+    {
+        $action = $_GET['action'] ?? '';
+        
+        switch ($action) {
+            case 'tempup':
+                $this->ChangeTemperature(true);
+                break;
+            case 'tempdown':
+                $this->ChangeTemperature(false);
+                break;
+            case 'setmode':
+                $mode = (int)($_GET['mode'] ?? 0);
+                $this->SetMode($mode);
+                break;
+        }
+        
+        // Zurück zur HTML-Seite
+        echo '<script>window.history.back();</script>';
     }
 
     public function TestFunction()
@@ -210,10 +234,10 @@ class ClimateControlTile extends IPSModule
         .current-temp { font-size: 32px; font-weight: 300; line-height: 1; margin-bottom: 5px; }
         .target-temp { font-size: 12px; color: #B3B3B3; }
         .controls { display: flex; justify-content: center; gap: 30px; margin-bottom: 15px; }
-        .temp-btn { width: 35px; height: 35px; border-radius: 50%; border: 2px solid #363B47; background: transparent; color: #F2F2F2; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.3s ease; }
+        .temp-btn { width: 35px; height: 35px; border-radius: 50%; border: 2px solid #363B47; background: transparent; color: #F2F2F2; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.3s ease; text-decoration: none; }
         .temp-btn:hover { border-color: #4DA6FF; background: rgba(77, 166, 255, 0.1); }
         .modes { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; }
-        .mode-btn { padding: 6px 10px; border-radius: 6px; border: 1px solid #363B47; background: transparent; color: #B3B3B3; cursor: pointer; font-size: 11px; font-weight: 500; transition: all 0.3s ease; min-width: 40px; text-align: center; }
+        .mode-btn { padding: 6px 10px; border-radius: 6px; border: 1px solid #363B47; background: transparent; color: #B3B3B3; cursor: pointer; font-size: 11px; font-weight: 500; transition: all 0.3s ease; min-width: 40px; text-align: center; text-decoration: none; }
         .mode-btn.active { background: #4DA6FF; border-color: #4DA6FF; color: white; }
         .mode-btn:hover { border-color: #4DA6FF; color: #F2F2F2; }
     </style>
@@ -236,16 +260,16 @@ class ClimateControlTile extends IPSModule
         </div>
         
         <div class="controls">
-            <button class="temp-btn" onclick="triggerSymconAction(\'TempDown\')">−</button>
-            <button class="temp-btn" onclick="triggerSymconAction(\'TempUp\')">+</button>
+            <a href="/hook/climatecontrol' . $this->InstanceID . '?action=tempdown" class="temp-btn">−</a>
+            <a href="/hook/climatecontrol' . $this->InstanceID . '?action=tempup" class="temp-btn">+</a>
         </div>
         
         <div class="modes">';
         
         foreach ($data['modes'] as $mode) {
             $active = $mode['value'] === $data['mode'] ? ' active' : '';
-            $content .= '<button class="mode-btn' . $active . '" onclick="setMode(' . $mode['value'] . ')">' . 
-                       htmlspecialchars($mode['name']) . '</button>';
+            $content .= '<a href="/hook/climatecontrol' . $this->InstanceID . '?action=setmode&mode=' . $mode['value'] . '" class="mode-btn' . $active . '">' . 
+                       htmlspecialchars($mode['name']) . '</a>';
         }
         
         $content .= '</div>
