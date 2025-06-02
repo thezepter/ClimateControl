@@ -62,6 +62,8 @@ class ClimateControlTile extends IPSModule
 
     public function RequestAction($Ident, $Value)
     {
+        IPS_LogMessage('ClimateControl', "RequestAction called: $Ident = $Value");
+        
         switch ($Ident) {
             case 'IncreaseTemperature':
                 $this->ChangeTemperature(true);
@@ -72,12 +74,21 @@ class ClimateControlTile extends IPSModule
             case 'SetMode':
                 $this->SetMode((int)$Value);
                 break;
+            case 'TestButton':
+                $this->TestFunction();
+                break;
             default:
                 throw new Exception('Invalid Ident');
         }
         
         // HTML nach Aktion aktualisieren
         $this->UpdateHTMLContent();
+    }
+
+    public function TestFunction()
+    {
+        IPS_LogMessage('ClimateControl', 'Test function called successfully!');
+        echo "Test erfolgreich!";
     }
 
     private function ChangeTemperature(bool $increase)
@@ -195,15 +206,16 @@ class ClimateControlTile extends IPSModule
         </div>
         
         <div class="controls">
-            <button class="temp-btn" onclick="requestAction(\'DecreaseTemperature\', \'\')">−</button>
-            <button class="temp-btn" onclick="requestAction(\'IncreaseTemperature\', \'\')">+</button>
+            <button class="temp-btn" onclick="testButton()">Test</button>
+            <button class="temp-btn" onclick="changeTemp(-1)">−</button>
+            <button class="temp-btn" onclick="changeTemp(1)">+</button>
         </div>
         
         <div class="modes">';
         
         foreach ($data['modes'] as $mode) {
             $active = $mode['value'] === $data['mode'] ? ' active' : '';
-            $content .= '<button class="mode-btn' . $active . '" onclick="requestAction(\'SetMode\', ' . $mode['value'] . ')">' . 
+            $content .= '<button class="mode-btn' . $active . '" onclick="setMode(' . $mode['value'] . ')">' . 
                        htmlspecialchars($mode['name']) . '</button>';
         }
         
@@ -211,34 +223,71 @@ class ClimateControlTile extends IPSModule
     </div>
     
     <script>
-        function requestAction(ident, value) {
-            if (typeof IPS_RequestAction === "function") {
-                IPS_RequestAction(' . $this->InstanceID . ', ident, value);
-            } else if (typeof window.parent.IPS_RequestAction === "function") {
-                window.parent.IPS_RequestAction(' . $this->InstanceID . ', ident, value);
-            } else {
-                console.log("RequestAction:", ident, value);
+        let currentTargetTemp = ' . $data['targetTemperature'] . ';
+        let currentMode = ' . $data['mode'] . ';
+        
+        function testButton() {
+            alert("Test Button geklickt! InstanceID: ' . $this->InstanceID . '");
+            console.log("Test button clicked");
+        }
+        
+        function changeTemp(direction) {
+            currentTargetTemp += (direction * 0.5);
+            currentTargetTemp = Math.max(5, Math.min(35, currentTargetTemp));
+            
+            document.querySelector(".current-temp").innerHTML = currentTargetTemp.toFixed(1) + \'<span style="font-size: 0.6em; margin-left: 2px; color: #B3B3B3;">°C</span>\';
+            document.querySelector(".target-temp").innerHTML = "🎯 " + currentTargetTemp.toFixed(1) + "°C";
+            
+            updateCircle();
+            console.log("Temperature changed to:", currentTargetTemp);
+            
+            // Try to call RequestAction
+            try {
+                if (typeof IPS_RequestAction === "function") {
+                    IPS_RequestAction(' . $this->InstanceID . ', direction > 0 ? "IncreaseTemperature" : "DecreaseTemperature", "");
+                } else if (typeof window.parent.IPS_RequestAction === "function") {
+                    window.parent.IPS_RequestAction(' . $this->InstanceID . ', direction > 0 ? "IncreaseTemperature" : "DecreaseTemperature", "");
+                }
+            } catch (e) {
+                console.log("RequestAction not available, using local simulation");
             }
         }
         
-        const currentTemp = ' . $data['currentTemperature'] . ';
-        const targetTemp = ' . $data['targetTemperature'] . ';
-        const minTemp = 5;
-        const maxTemp = 35;
+        function setMode(modeValue) {
+            currentMode = modeValue;
+            
+            document.querySelectorAll(".mode-btn").forEach(btn => btn.classList.remove("active"));
+            event.target.classList.add("active");
+            
+            console.log("Mode changed to:", modeValue);
+            
+            try {
+                if (typeof IPS_RequestAction === "function") {
+                    IPS_RequestAction(' . $this->InstanceID . ', "SetMode", modeValue);
+                } else if (typeof window.parent.IPS_RequestAction === "function") {
+                    window.parent.IPS_RequestAction(' . $this->InstanceID . ', "SetMode", modeValue);
+                }
+            } catch (e) {
+                console.log("RequestAction not available, using local simulation");
+            }
+        }
         
-        const progress = Math.max(0, Math.min(1, (currentTemp - minTemp) / (maxTemp - minTemp)));
-        const circumference = 471.24;
-        const offset = circumference - (progress * circumference);
-        document.getElementById("progressCircle").style.strokeDashoffset = offset;
+        function updateCircle() {
+            const progress = Math.max(0, Math.min(1, (currentTargetTemp - 5) / (35 - 5)));
+            const circumference = 471.24;
+            const offset = circumference - (progress * circumference);
+            document.getElementById("progressCircle").style.strokeDashoffset = offset;
+            
+            const hue = Math.round(200 - (progress * 200));
+            document.getElementById("progressCircle").style.stroke = `hsl(${hue}, 80%, 60%)`;
+            document.getElementById("tempMarker").style.fill = `hsl(${hue}, 80%, 60%)`;
+            
+            const angle = (progress * 360) - 90;
+            document.getElementById("tempMarker").style.transform = `rotate(${angle}deg)`;
+        }
         
-        const hue = Math.round(200 - (progress * 200));
-        document.getElementById("progressCircle").style.stroke = `hsl(${hue}, 80%, 60%)`;
-        document.getElementById("tempMarker").style.fill = `hsl(${hue}, 80%, 60%)`;
-        
-        const targetProgress = Math.max(0, Math.min(1, (targetTemp - minTemp) / (maxTemp - minTemp)));
-        const angle = (targetProgress * 360) - 90;
-        document.getElementById("tempMarker").style.transform = `rotate(${angle}deg)`;
-        document.getElementById("tempMarker").style.transformOrigin = "90px 90px";
+        // Initial circle setup
+        updateCircle();
     </script>
 </body>
 </html>';
