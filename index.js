@@ -10,10 +10,8 @@ class ClimateControl {
         this.elements = {
             currentTemp: document.getElementById('currentTemperature'),
             targetTemp: document.getElementById('targetTemperature'),
-            progressRing: document.getElementById('progressRing'),
-            backgroundRing: document.getElementById('backgroundRing'),
-            targetMarker: document.getElementById('targetMarker'),
-            dragPath: document.getElementById('dragPath'),
+            progressCircle: document.getElementById('progressCircle'),
+            temperatureMarker: document.getElementById('temperatureMarker'),
             increaseBtn: document.getElementById('increaseTemp'),
             decreaseBtn: document.getElementById('decreaseTemp'),
             modeButtons: document.getElementById('modeButtons')
@@ -21,16 +19,7 @@ class ClimateControl {
         
         this.minTemp = 5;
         this.maxTemp = 35;
-        this.ringLength = 267; // Länge des Halbkreis-Rings
-        this.isDragging = false;
-        
-        // Modusspezifische Farben
-        this.modeColors = {
-            0: 'hsl(220 15% 40%)', // Aus - Grau
-            1: 'hsl(0 70% 55%)',   // Heizen - Rot
-            2: 'hsl(200 80% 60%)', // Kühlen - Blau
-            3: 'hsl(120 60% 50%)'  // Auto - Grün
-        };
+        this.circumference = 2 * Math.PI * 85; // r = 85
         
         this.init();
     }
@@ -51,97 +40,9 @@ class ClimateControl {
             this.requestAction('DecreaseTemperature', '');
         });
         
-        // Ring Slider Events
-        this.bindRingSliderEvents();
-        
         // Touch Events für bessere mobile Unterstützung
         this.addTouchFeedback(this.elements.increaseBtn);
         this.addTouchFeedback(this.elements.decreaseBtn);
-    }
-    
-    bindRingSliderEvents() {
-        // Mouse Events
-        this.elements.dragPath.addEventListener('mousedown', (e) => this.startDrag(e));
-        this.elements.targetMarker.addEventListener('mousedown', (e) => this.startDrag(e));
-        document.addEventListener('mousemove', (e) => this.drag(e));
-        document.addEventListener('mouseup', () => this.endDrag());
-        
-        // Touch Events
-        this.elements.dragPath.addEventListener('touchstart', (e) => this.startDrag(e), { passive: false });
-        this.elements.targetMarker.addEventListener('touchstart', (e) => this.startDrag(e), { passive: false });
-        document.addEventListener('touchmove', (e) => this.drag(e), { passive: false });
-        document.addEventListener('touchend', () => this.endDrag());
-        
-        // Click auf Ring
-        this.elements.dragPath.addEventListener('click', (e) => this.handleRingClick(e));
-    }
-    
-    startDrag(e) {
-        e.preventDefault();
-        this.isDragging = true;
-        this.elements.targetMarker.style.transform += ' scale(1.2)';
-    }
-    
-    drag(e) {
-        if (!this.isDragging) return;
-        e.preventDefault();
-        
-        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-        
-        this.updateTemperatureFromPosition(clientX, clientY);
-    }
-    
-    endDrag() {
-        if (!this.isDragging) return;
-        this.isDragging = false;
-        this.elements.targetMarker.style.transform = this.elements.targetMarker.style.transform.replace(' scale(1.2)', '');
-    }
-    
-    handleRingClick(e) {
-        if (this.isDragging) return;
-        this.updateTemperatureFromPosition(e.clientX, e.clientY);
-    }
-    
-    updateTemperatureFromPosition(clientX, clientY) {
-        const svg = this.elements.progressRing.closest('svg');
-        const rect = svg.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        
-        // Berechne Winkel relativ zum Zentrum
-        const deltaX = clientX - centerX;
-        const deltaY = clientY - centerY;
-        let angle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
-        
-        // Normalisiere auf Ring-Bereich: links = 0°, rechts = 180° (oberer Halbkreis)
-        // Konvertiere zu 0-180° Bereich für oberen Halbkreis
-        angle = angle + 180; // -180 bis 180 -> 0 bis 360
-        if (angle > 360) angle -= 360;
-        
-        // Begrenze auf oberen Halbkreis (0° = links, 180° = rechts)
-        if (angle > 180) {
-            // Bestimme nähere Seite
-            if (angle > 270) angle = 0; // links
-            else angle = 180; // rechts
-        }
-        
-        // Konvertiere Winkel zu Temperatur
-        const tempRange = this.maxTemp - this.minTemp;
-        const normalizedAngle = angle / 180; // 0 bis 1
-        const newTemp = this.minTemp + (normalizedAngle * tempRange);
-        
-        // Runde auf 0.5°C Schritte
-        const roundedTemp = Math.round(newTemp * 2) / 2;
-        const clampedTemp = Math.max(this.minTemp, Math.min(this.maxTemp, roundedTemp));
-        
-        if (clampedTemp !== this.data.targetTemperature) {
-            this.data.targetTemperature = clampedTemp;
-            this.updateDisplay();
-            
-            // Sende Änderung an Symcon
-            this.requestAction('SetTargetTemperature', clampedTemp);
-        }
     }
     
     addTouchFeedback(element) {
@@ -250,19 +151,13 @@ class ClimateControl {
         const currentRange = Math.max(0, Math.min(tempRange, this.data.currentTemperature - this.minTemp));
         const progress = currentRange / tempRange;
         
-        // Berechne Ring-Fortschritt für Halbkreis
-        const offset = this.ringLength - (progress * this.ringLength);
-        this.elements.progressRing.style.strokeDashoffset = offset;
+        const offset = this.circumference - (progress * this.circumference);
+        this.elements.progressCircle.style.strokeDashoffset = offset;
         
-        // Setze Farbe basierend auf Modus
-        this.updateModeColors();
-    }
-    
-    updateModeColors() {
-        const modeColor = this.modeColors[this.data.mode] || this.modeColors[0];
-        this.elements.progressRing.style.stroke = modeColor;
-        this.elements.backgroundRing.style.stroke = `hsl(220 15% 25%)`;
-        this.elements.targetMarker.style.stroke = modeColor;
+        // Farbänderung basierend auf Temperatur
+        const hue = this.getTemperatureHue(this.data.currentTemperature);
+        this.elements.progressCircle.style.stroke = `hsl(${hue}, 80%, 60%)`;
+        this.elements.temperatureMarker.style.fill = `hsl(${hue}, 80%, 60%)`;
     }
     
     getTemperatureHue(temp) {
@@ -276,21 +171,10 @@ class ClimateControl {
         const tempRange = this.maxTemp - this.minTemp;
         const targetRange = Math.max(0, Math.min(tempRange, this.data.targetTemperature - this.minTemp));
         const progress = targetRange / tempRange;
+        const angle = (progress * 360) - 90; // -90 um bei 12 Uhr zu starten
         
-        // Berechne Position auf dem oberen Halbkreis (0° = links, 180° = rechts)
-        const angle = progress * 180; // 0° bis 180°
-        
-        // Konvertiere zu SVG Position für oberen Halbkreis
-        const radian = (angle - 180) * (Math.PI / 180); // Startpunkt links
-        const centerX = 100;
-        const centerY = 100;
-        const radius = 85;
-        
-        const x = centerX + radius * Math.cos(radian);
-        const y = centerY + radius * Math.sin(radian);
-        
-        this.elements.targetMarker.setAttribute('cx', x);
-        this.elements.targetMarker.setAttribute('cy', y);
+        this.elements.temperatureMarker.style.transform = `rotate(${angle}deg)`;
+        this.elements.temperatureMarker.style.transformOrigin = '100px 100px';
     }
     
     updateModeButtons() {
@@ -315,7 +199,6 @@ class ClimateControl {
         // Lokale Aktualisierung für bessere UX
         this.data.mode = modeValue;
         this.updateModeButtons();
-        this.updateModeColors(); // Sofortige Farbaktualisierung
     }
     
     // Symcon HandleMessage Handler

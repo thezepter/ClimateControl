@@ -17,45 +17,37 @@
         <!-- Hauptkreis mit Temperaturanzeige -->
         <div class="temperature-circle">
             <svg class="circle-progress" viewBox="0 0 200 200">
-                <!-- Hintergrund Ring (mit Öffnung unten) -->
-                <path 
-                    id="backgroundRing"
-                    d="M 40 140 A 85 85 0 0 1 160 140" 
+                <!-- Hintergrund Kreis -->
+                <circle 
+                    cx="100" 
+                    cy="100" 
+                    r="85" 
                     fill="none" 
                     stroke="hsl(220 15% 25%)" 
-                    stroke-width="12"
-                    stroke-linecap="round"
+                    stroke-width="8"
                 />
-                <!-- Fortschritts Ring (Ist-Temperatur) -->
-                <path 
-                    id="progressRing"
-                    d="M 40 140 A 85 85 0 0 1 160 140" 
+                <!-- Fortschritts Kreis -->
+                <circle 
+                    id="progressCircle"
+                    cx="100" 
+                    cy="100" 
+                    r="85" 
                     fill="none" 
                     stroke="hsl(200 80% 60%)" 
                     stroke-width="8" 
                     stroke-linecap="round"
-                    stroke-dasharray="267"
-                    stroke-dashoffset="267"
+                    stroke-dasharray="534.07"
+                    stroke-dashoffset="534.07"
+                    transform="rotate(-90 100 100)"
                 />
-                <!-- Solltemperatur Marker (interaktiv) -->
+                <!-- Temperatur Marker -->
                 <circle 
-                    id="targetMarker"
-                    cx="40" 
-                    cy="140" 
-                    r="8" 
-                    fill="white"
-                    stroke="hsl(200 80% 60%)"
-                    stroke-width="3"
-                    style="cursor: pointer; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3))"
-                />
-                <!-- Unsichtbare Pfad für Drag-Bereich -->
-                <path 
-                    id="dragPath"
-                    d="M 40 140 A 85 85 0 0 1 160 140" 
-                    fill="none" 
-                    stroke="transparent" 
-                    stroke-width="30"
-                    style="cursor: pointer"
+                    id="temperatureMarker"
+                    cx="100" 
+                    cy="15" 
+                    r="6" 
+                    fill="hsl(200 80% 60%)"
+                    transform="rotate(0 100 100)"
                 />
             </svg>
 
