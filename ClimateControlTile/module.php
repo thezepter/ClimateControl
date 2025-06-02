@@ -20,6 +20,12 @@ class ClimateControlTile extends IPSModule
         
         // Variable für HTML-Inhalt registrieren
         $this->RegisterVariableString('HTMLContent', 'HTML Content', '~HTMLBox', 0);
+        
+        // Action-Variablen für Steuerung registrieren
+        $this->RegisterVariableBoolean('TempUp', 'Temperatur +', '~Switch', 1);
+        $this->RegisterVariableBoolean('TempDown', 'Temperatur -', '~Switch', 2);
+        $this->EnableAction('TempUp');
+        $this->EnableAction('TempDown');
     }
 
     public function ApplyChanges()
@@ -65,6 +71,14 @@ class ClimateControlTile extends IPSModule
         IPS_LogMessage('ClimateControl', "RequestAction called: $Ident = $Value");
         
         switch ($Ident) {
+            case 'TempUp':
+                $this->ChangeTemperature(true);
+                SetValue($this->GetIDForIdent('TempUp'), false); // Button zurücksetzen
+                break;
+            case 'TempDown':
+                $this->ChangeTemperature(false);
+                SetValue($this->GetIDForIdent('TempDown'), false); // Button zurücksetzen
+                break;
             case 'IncreaseTemperature':
                 $this->ChangeTemperature(true);
                 break;
@@ -73,9 +87,6 @@ class ClimateControlTile extends IPSModule
                 break;
             case 'SetMode':
                 $this->SetMode((int)$Value);
-                break;
-            case 'TestButton':
-                $this->TestFunction();
                 break;
             default:
                 throw new Exception('Invalid Ident');
@@ -95,8 +106,7 @@ class ClimateControlTile extends IPSModule
     {
         $targetTempVarID = $this->ReadPropertyInteger('TargetTemperatureVariableID');
         if ($targetTempVarID === 0 || !IPS_VariableExists($targetTempVarID)) {
-            // Fallback: Simuliere Temperaturänderung für Demo
-            $this->SimulateTemperatureChange($increase);
+            IPS_LogMessage('ClimateControl', 'Keine Soll-Temperatur Variable konfiguriert');
             return;
         }
 
@@ -108,19 +118,39 @@ class ClimateControlTile extends IPSModule
         $newTemp = $increase ? $currentTemp + $step : $currentTemp - $step;
         $newTemp = max($minTemp, min($maxTemp, $newTemp));
 
-        RequestAction($targetTempVarID, $newTemp);
+        IPS_LogMessage('ClimateControl', "Ändere Temperatur von $currentTemp auf $newTemp");
+        
+        // Direkt Variable setzen oder RequestAction versuchen
+        try {
+            if (IPS_GetVariable($targetTempVarID)['VariableAction'] > 0) {
+                RequestAction($targetTempVarID, $newTemp);
+            } else {
+                SetValue($targetTempVarID, $newTemp);
+            }
+        } catch (Exception $e) {
+            IPS_LogMessage('ClimateControl', 'Fehler beim Setzen der Temperatur: ' . $e->getMessage());
+        }
     }
 
     private function SetMode(int $modeValue)
     {
         $modeVarID = $this->ReadPropertyInteger('ModeVariableID');
         if ($modeVarID === 0 || !IPS_VariableExists($modeVarID)) {
-            // Fallback: Simuliere Modus-Änderung für Demo
-            $this->SimulateModeChange($modeValue);
+            IPS_LogMessage('ClimateControl', 'Keine Modus Variable konfiguriert');
             return;
         }
 
-        RequestAction($modeVarID, $modeValue);
+        IPS_LogMessage('ClimateControl', "Ändere Modus auf $modeValue");
+        
+        try {
+            if (IPS_GetVariable($modeVarID)['VariableAction'] > 0) {
+                RequestAction($modeVarID, $modeValue);
+            } else {
+                SetValue($modeVarID, $modeValue);
+            }
+        } catch (Exception $e) {
+            IPS_LogMessage('ClimateControl', 'Fehler beim Setzen des Modus: ' . $e->getMessage());
+        }
     }
 
     private function SimulateTemperatureChange(bool $increase)
