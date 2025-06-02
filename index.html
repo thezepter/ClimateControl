@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Klimasteuerung</title>
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div class="climate-control">
+        <!-- Header mit Titel -->
+        <div class="header">
+            <h2 class="title">Klimaanlage</h2>
+            <div class="status-indicator"></div>
+        </div>
+
+        <!-- Hauptkreis mit Temperaturanzeige -->
+        <div class="temperature-circle">
+            <svg class="circle-progress" viewBox="0 0 200 200">
+                <!-- Hintergrund Kreis -->
+                <circle 
+                    cx="100" 
+                    cy="100" 
+                    r="85" 
+                    fill="none" 
+                    stroke="hsl(220 15% 25%)" 
+                    stroke-width="8"
+                />
+                <!-- Fortschritts Kreis -->
+                <circle 
+                    id="progressCircle"
+                    cx="100" 
+                    cy="100" 
+                    r="85" 
+                    fill="none" 
+                    stroke="hsl(200 80% 60%)" 
+                    stroke-width="8" 
+                    stroke-linecap="round"
+                    stroke-dasharray="534.07"
+                    stroke-dashoffset="534.07"
+                    transform="rotate(-90 100 100)"
+                />
+                <!-- Temperatur Marker -->
+                <circle 
+                    id="temperatureMarker"
+                    cx="100" 
+                    cy="15" 
+                    r="6" 
+                    fill="hsl(200 80% 60%)"
+                    transform="rotate(0 100 100)"
+                />
+            </svg>
+
+            <!-- Temperatur Display -->
+            <div class="temperature-display">
+                <div class="current-temp">
+                    <span id="currentTemperature">20</span>
+                    <span class="unit">°C</span>
+                </div>
+                <div class="target-temp">
+                    <span class="target-icon">🎯</span>
+                    <span id="targetTemperature">22</span>
+                    <span class="unit">°C</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Temperatur Steuerung -->
+        <div class="temperature-controls">
+            <button class="temp-btn temp-decrease" id="decreaseTemp">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </button>
+            
+            <button class="temp-btn temp-increase" id="increaseTemp">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Modi Steuerung -->
+        <div class="mode-controls">
+            <div class="mode-buttons" id="modeButtons">
+                <!-- Modi werden dynamisch geladen -->
+            </div>
+        </div>
+    </div>
+
+    <script src="index.js"></script>
+</body>
+</html>

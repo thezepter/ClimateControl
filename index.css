@@ -1,0 +1,329 @@
+/* CSS Custom Properties für einfache Anpassung */
+:root {
+    --primary-color: 200 80% 60%; /* #4DA6FF */
+    --secondary-color: 220 15% 25%; /* #363B47 */
+    --background-dark: 220 20% 10%; /* #1A1D26 */
+    --background-light: 220 15% 15%; /* #252A36 */
+    --text-primary: 0 0% 95%; /* #F2F2F2 */
+    --text-secondary: 0 0% 70%; /* #B3B3B3 */
+    --success-color: 120 60% 50%; /* #4CAF50 */
+    --warning-color: 40 90% 60%; /* #FF9800 */
+    --error-color: 0 70% 60%; /* #F44336 */
+    
+    --border-radius: 16px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: hsl(var(--background-dark));
+    color: hsl(var(--text-primary));
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.climate-control {
+    background: hsl(var(--background-light));
+    border-radius: var(--border-radius);
+    padding: 32px;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 8px 32px hsla(0 0% 0% / 0.3);
+    position: relative;
+}
+
+/* Header */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+}
+
+.title {
+    font-size: 20px;
+    font-weight: 600;
+    color: hsl(var(--text-primary));
+}
+
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: hsl(var(--success-color));
+    box-shadow: 0 0 8px hsla(var(--success-color) / 0.5);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+/* Temperatur Kreis */
+.temperature-circle {
+    position: relative;
+    margin: 0 auto 40px;
+    width: 280px;
+    height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.circle-progress {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transition: var(--transition);
+}
+
+.temperature-display {
+    text-align: center;
+    z-index: 2;
+    position: relative;
+}
+
+.current-temp {
+    font-size: 48px;
+    font-weight: 300;
+    line-height: 1;
+    margin-bottom: 8px;
+    color: hsl(var(--text-primary));
+}
+
+.target-temp {
+    font-size: 16px;
+    color: hsl(var(--text-secondary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.target-icon {
+    font-size: 14px;
+}
+
+.unit {
+    font-size: 0.6em;
+    margin-left: 4px;
+    color: hsl(var(--text-secondary));
+}
+
+/* Temperatur Steuerung */
+.temperature-controls {
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    margin-bottom: 32px;
+}
+
+.temp-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 2px solid hsl(var(--secondary-color));
+    background: transparent;
+    color: hsl(var(--text-primary));
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.temp-btn:hover {
+    border-color: hsl(var(--primary-color));
+    background: hsla(var(--primary-color) / 0.1);
+    transform: scale(1.05);
+}
+
+.temp-btn:active {
+    transform: scale(0.95);
+}
+
+.temp-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px hsla(var(--primary-color) / 0.3);
+}
+
+/* Ripple Effekt */
+.temp-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: hsla(var(--primary-color) / 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.3s, height 0.3s;
+}
+
+.temp-btn:active::before {
+    width: 100px;
+    height: 100px;
+}
+
+/* Modi Steuerung */
+.mode-controls {
+    margin-top: 24px;
+}
+
+.mode-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.mode-btn {
+    padding: 12px 20px;
+    border-radius: 12px;
+    border: 1px solid hsl(var(--secondary-color));
+    background: transparent;
+    color: hsl(var(--text-secondary));
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: var(--transition);
+    min-width: 64px;
+    text-align: center;
+    flex: 1;
+    max-width: 120px;
+}
+
+.mode-btn:hover {
+    border-color: hsl(var(--primary-color));
+    color: hsl(var(--text-primary));
+    background: hsla(var(--primary-color) / 0.1);
+}
+
+.mode-btn.active {
+    background: hsl(var(--primary-color));
+    border-color: hsl(var(--primary-color));
+    color: white;
+    box-shadow: 0 4px 12px hsla(var(--primary-color) / 0.3);
+}
+
+.mode-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px hsla(var(--primary-color) / 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+    .climate-control {
+        padding: 24px;
+        margin: 10px;
+    }
+    
+    .temperature-circle {
+        width: 240px;
+        height: 240px;
+    }
+    
+    .current-temp {
+        font-size: 40px;
+    }
+    
+    .temperature-controls {
+        gap: 40px;
+    }
+    
+    .temp-btn {
+        width: 48px;
+        height: 48px;
+    }
+    
+    .mode-buttons {
+        gap: 6px;
+    }
+    
+    .mode-btn {
+        padding: 10px 16px;
+        font-size: 13px;
+        min-width: 56px;
+    }
+}
+
+/* Animationen */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.climate-control {
+    animation: fadeIn 0.6s ease-out;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Focus Styles für bessere Accessibility */
+.temp-btn:focus-visible,
+.mode-btn:focus-visible {
+    outline: 2px solid hsl(var(--primary-color));
+    outline-offset: 2px;
+}
+
+/* Hover Effekte für Touch Devices deaktivieren */
+@media (hover: none) {
+    .temp-btn:hover,
+    .mode-btn:hover {
+        transform: none;
+        background: transparent;
+        border-color: inherit;
+    }
+    
+    .temp-btn:hover {
+        border-color: hsl(var(--secondary-color));
+    }
+    
+    .mode-btn:hover {
+        border-color: hsl(var(--secondary-color));
+        color: hsl(var(--text-secondary));
+    }
+}
+
+/* Loading State */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.loading .circle-progress {
+    animation: rotate 2s linear infinite;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
