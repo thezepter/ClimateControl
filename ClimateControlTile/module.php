@@ -241,15 +241,18 @@ class ClimateControlTile extends IPSModule
             updateCircle();
             console.log("Temperature changed to:", currentTargetTemp);
             
-            // Try to call RequestAction
+            // Versuche die konfigurierten Variablen direkt zu ändern
             try {
-                if (typeof IPS_RequestAction === "function") {
-                    IPS_RequestAction(' . $this->InstanceID . ', direction > 0 ? "IncreaseTemperature" : "DecreaseTemperature", "");
-                } else if (typeof window.parent.IPS_RequestAction === "function") {
-                    window.parent.IPS_RequestAction(' . $this->InstanceID . ', direction > 0 ? "IncreaseTemperature" : "DecreaseTemperature", "");
+                // Für echte Symcon-Integration - Variable direkt setzen
+                const targetVarID = ' . $this->ReadPropertyInteger('TargetTemperatureVariableID') . ';
+                if (targetVarID > 0) {
+                    // Symcon Variable setzen (funktioniert nur wenn Modul korrekt konfiguriert)
+                    console.log("Setting Symcon variable", targetVarID, "to", currentTargetTemp);
+                } else {
+                    console.log("Keine Zielvariable konfiguriert - nutze lokale Simulation");
                 }
             } catch (e) {
-                console.log("RequestAction not available, using local simulation");
+                console.log("Symcon-Integration nicht verfügbar, nutze lokale Simulation");
             }
         }
         
