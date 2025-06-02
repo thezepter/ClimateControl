@@ -83,7 +83,9 @@ class ClimateControlTile extends IPSModule
     private function ChangeTemperature(bool $increase)
     {
         $targetTempVarID = $this->ReadPropertyInteger('TargetTemperatureVariableID');
-        if ($targetTempVarID === 0) {
+        if ($targetTempVarID === 0 || !IPS_VariableExists($targetTempVarID)) {
+            // Fallback: Simuliere Temperaturänderung für Demo
+            $this->SimulateTemperatureChange($increase);
             return;
         }
 
@@ -101,11 +103,53 @@ class ClimateControlTile extends IPSModule
     private function SetMode(int $modeValue)
     {
         $modeVarID = $this->ReadPropertyInteger('ModeVariableID');
-        if ($modeVarID === 0) {
+        if ($modeVarID === 0 || !IPS_VariableExists($modeVarID)) {
+            // Fallback: Simuliere Modus-Änderung für Demo
+            $this->SimulateModeChange($modeValue);
             return;
         }
 
         RequestAction($modeVarID, $modeValue);
+    }
+
+    private function SimulateTemperatureChange(bool $increase)
+    {
+        // Simulierte Temperaturwerte für Demo-Zwecke
+        $step = $this->ReadPropertyFloat('TemperatureStep');
+        $minTemp = $this->ReadPropertyFloat('MinTemperature');
+        $maxTemp = $this->ReadPropertyFloat('MaxTemperature');
+        
+        // Aktuelle Werte aus der Demo-Simulation holen
+        $currentTarget = $this->GetSimulatedTargetTemp();
+        $newTemp = $increase ? $currentTarget + $step : $currentTarget - $step;
+        $newTemp = max($minTemp, min($maxTemp, $newTemp));
+        
+        $this->SetSimulatedTargetTemp($newTemp);
+    }
+
+    private function SimulateModeChange(int $modeValue)
+    {
+        $this->SetSimulatedMode($modeValue);
+    }
+
+    private function GetSimulatedTargetTemp(): float
+    {
+        return $this->GetBuffer('SimulatedTargetTemp') ? (float)$this->GetBuffer('SimulatedTargetTemp') : 22.0;
+    }
+
+    private function SetSimulatedTargetTemp(float $temp)
+    {
+        $this->SetBuffer('SimulatedTargetTemp', (string)$temp);
+    }
+
+    private function GetSimulatedMode(): int
+    {
+        return $this->GetBuffer('SimulatedMode') ? (int)$this->GetBuffer('SimulatedMode') : 0;
+    }
+
+    private function SetSimulatedMode(int $mode)
+    {
+        $this->SetBuffer('SimulatedMode', (string)$mode);
     }
 
     public function GetVisualizationTile()
@@ -210,8 +254,8 @@ class ClimateControlTile extends IPSModule
 
         $data = [
             'currentTemperature' => 20.0,
-            'targetTemperature' => 22.0,
-            'mode' => 0,
+            'targetTemperature' => $this->GetSimulatedTargetTemp(),
+            'mode' => $this->GetSimulatedMode(),
             'modes' => []
         ];
 
@@ -221,7 +265,7 @@ class ClimateControlTile extends IPSModule
 
         if ($targetTempVarID > 0 && IPS_VariableExists($targetTempVarID)) {
             $data['targetTemperature'] = GetValue($targetTempVarID);
-        }
+        } 
 
         if ($modeVarID > 0 && IPS_VariableExists($modeVarID)) {
             $data['mode'] = GetValue($modeVarID);
@@ -244,13 +288,15 @@ class ClimateControlTile extends IPSModule
             }
         }
 
-        // Fallback Modi wenn keine Variable konfiguriert
+        // Modi wenn keine Variable konfiguriert
         if (empty($data['modes'])) {
             $data['modes'] = [
-                ['value' => 0, 'name' => 'Aus', 'icon' => ''],
-                ['value' => 1, 'name' => 'Heizen', 'icon' => ''],
-                ['value' => 2, 'name' => 'Kühlen', 'icon' => ''],
-                ['value' => 3, 'name' => 'Auto', 'icon' => '']
+                ['value' => 0, 'name' => 'Stop', 'icon' => ''],
+                ['value' => 1, 'name' => 'Kühlen', 'icon' => ''],
+                ['value' => 2, 'name' => 'Heizen', 'icon' => ''],
+                ['value' => 3, 'name' => 'Lüfter', 'icon' => ''],
+                ['value' => 4, 'name' => 'Entfeuchten', 'icon' => ''],
+                ['value' => 5, 'name' => 'Automatik', 'icon' => '']
             ];
         }
 
