@@ -29,7 +29,11 @@ Eine moderne, kreisförmige Klimasteuerungs-Kachel für IP-Symcon mit dem HTML-S
 
 ### Git-Repository Installation
 
-Falls Sie ein Git-Repository haben, können Sie die URL in Symcon unter "Module" → "Hinzufügen" eingeben.
+Sie können das Modul direkt über Git installieren:
+
+1. **Symcon-Konsole** → "Module" → "Hinzufügen"
+2. **Git-URL eingeben**: `https://github.com/thezepter/ClimateControl`
+3. **Modul installieren** und Symcon erkennt automatisch die korrekte Struktur
 
 ## Konfiguration
 
