@@ -1,0 +1,43 @@
+{
+    "elements": [
+        {
+            "type": "SelectVariable",
+            "name": "CurrentTemperatureVariableID",
+            "caption": "Ist-Temperatur Variable"
+        },
+        {
+            "type": "SelectVariable", 
+            "name": "TargetTemperatureVariableID",
+            "caption": "Soll-Temperatur Variable"
+        },
+        {
+            "type": "SelectVariable",
+            "name": "ModeVariableID", 
+            "caption": "Modus Variable"
+        },
+        {
+            "type": "NumberSpinner",
+            "name": "TemperatureStep",
+            "caption": "Temperatur Schrittweite",
+            "minimum": 0.1,
+            "maximum": 5.0,
+            "digits": 1
+        },
+        {
+            "type": "NumberSpinner",
+            "name": "MinTemperature",
+            "caption": "Minimale Temperatur", 
+            "minimum": -20,
+            "maximum": 50,
+            "digits": 1
+        },
+        {
+            "type": "NumberSpinner",
+            "name": "MaxTemperature",
+            "caption": "Maximale Temperatur",
+            "minimum": -20, 
+            "maximum": 50,
+            "digits": 1
+        }
+    ]
+}
