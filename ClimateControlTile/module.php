@@ -19,8 +19,7 @@ class ClimateControlTile extends IPSModule
         $this->RegisterPropertyFloat('MinTemperature', 5.0);
         $this->RegisterPropertyFloat('MaxTemperature', 35.0);
         
-        // WebHook für Tile-Zugriff registrieren
-        $this->RegisterHook('/hook/climatetile' . $this->InstanceID);
+        // Keine WebHook-Registrierung für einfache Module
     }
 
     public function ApplyChanges()
@@ -56,36 +55,7 @@ class ClimateControlTile extends IPSModule
         }
     }
 
-    public function ProcessHookData()
-    {
-        $root = realpath(__DIR__ . '/html');
-        $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-        $file = basename($path);
-        
-        // Wenn keine spezifische Datei angefordert wird, lade die Hauptseite
-        if (empty($file) || $file === 'climatetile' . $this->InstanceID) {
-            echo $this->GetVisualizationTile();
-            return;
-        }
-        
-        // Statische Dateien bereitstellen
-        $filePath = $root . '/' . $file;
-        if (file_exists($filePath) && strpos(realpath($filePath), $root) === 0) {
-            $ext = pathinfo($file, PATHINFO_EXTENSION);
-            switch ($ext) {
-                case 'css':
-                    header('Content-Type: text/css');
-                    break;
-                case 'js':
-                    header('Content-Type: application/javascript');
-                    break;
-                case 'html':
-                    header('Content-Type: text/html');
-                    break;
-            }
-            readfile($filePath);
-        }
-    }
+
 
     public function HandleMessage(string $data)
     {
@@ -147,11 +117,8 @@ class ClimateControlTile extends IPSModule
 
     private function UpdateWebFront()
     {
-        // WebFront aktualisieren
-        $this->SendDataToChildren(json_encode([
-            'DataID' => '{7A107D38-75B7-4B65-8FAE-7B8C9F6A7284}',
-            'Data' => $this->GetCurrentData()
-        ]));
+        // Für einfache Tile-Visualisierung ohne WebHook
+        // Die Daten werden direkt über GetVisualizationTile() bereitgestellt
     }
     
     // Hauptmethode für Symcon Tile-Visualisierung
@@ -213,21 +180,12 @@ class ClimateControlTile extends IPSModule
             
             <script>
                 function requestAction(ident, value) {
-                    fetch("/api/module/", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                            "jsonrpc": "2.0",
-                            "method": "IPS_RequestAction",
-                            "params": [' . $this->InstanceID . ', ident, value],
-                            "id": 1
-                        })
-                    }).then(() => {
-                        // Seite nach Aktion neu laden
-                        setTimeout(() => location.reload(), 500);
-                    });
+                    // Vereinfachte RequestAction für Symcon
+                    if (window.parent && window.parent.IPS_RequestAction) {
+                        window.parent.IPS_RequestAction(' . $this->InstanceID . ', ident, value);
+                    } else {
+                        console.log("RequestAction:", ident, value);
+                    }
                 }
                 
                 // Temperatur-Progress Animation
