@@ -59,6 +59,9 @@ class ClimateControlTile extends IPSModule
             case 'DecreaseTemperature':
                 $this->ChangeTemperature(false);
                 break;
+            case 'SetTargetTemperature':
+                $this->SetTargetTemperature((float)$Value);
+                break;
             case 'SetMode':
                 $this->SetMode((int)$Value);
                 break;
@@ -83,6 +86,22 @@ class ClimateControlTile extends IPSModule
         $newTemp = max($minTemp, min($maxTemp, $newTemp));
 
         RequestAction($targetTempVarID, $newTemp);
+        $this->UpdateWebFront();
+    }
+
+    private function SetTargetTemperature(float $temperature)
+    {
+        $targetTempVarID = $this->ReadPropertyInteger('TargetTemperatureVariableID');
+        if ($targetTempVarID === 0) {
+            return;
+        }
+
+        $minTemp = $this->ReadPropertyFloat('MinTemperature');
+        $maxTemp = $this->ReadPropertyFloat('MaxTemperature');
+        
+        $clampedTemp = max($minTemp, min($maxTemp, $temperature));
+        
+        RequestAction($targetTempVarID, $clampedTemp);
         $this->UpdateWebFront();
     }
 
