@@ -21,14 +21,8 @@ class ClimateControlTile extends IPSModule
         // Variable für HTML-Inhalt registrieren
         $this->RegisterVariableString('HTMLContent', 'HTML Content', '~HTMLBox', 0);
         
-        // Action-Variablen für Steuerung registrieren
-        $this->RegisterVariableBoolean('TempUp', 'Temperatur +', '~Switch', 1);
-        $this->RegisterVariableBoolean('TempDown', 'Temperatur -', '~Switch', 2);
-        $this->EnableAction('TempUp');
-        $this->EnableAction('TempDown');
-        
-        // WebHook für HTML-Steuerung registrieren
-        $this->RegisterHook('/hook/climatecontrol' . $this->InstanceID);
+        // Visualisierungstyp auf 1 setzen, da wir HTML anbieten möchten
+        $this->SetVisualizationType(1);
     }
 
     public function ApplyChanges()
@@ -50,23 +44,18 @@ class ClimateControlTile extends IPSModule
             $this->RegisterMessage($modeVarID, VM_UPDATE);
         }
 
-        // HTML-Inhalt initial setzen
-        $this->UpdateHTMLContent();
+        // Schicke eine komplette Update-Nachricht an die Darstellung
+        $this->UpdateVisualizationValue($this->GetFullUpdateMessage());
     }
 
     public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
     {
         switch ($Message) {
             case VM_UPDATE:
-                $this->UpdateHTMLContent();
+                // Teile der HTML-Darstellung den neuen Wert mit
+                $this->UpdateVisualizationValue($this->GetFullUpdateMessage());
                 break;
         }
-    }
-
-    private function UpdateHTMLContent()
-    {
-        $htmlContent = $this->GetVisualizationTile();
-        SetValue($this->GetIDForIdent('HTMLContent'), $htmlContent);
     }
 
     public function RequestAction($Ident, $Value)
@@ -74,14 +63,6 @@ class ClimateControlTile extends IPSModule
         IPS_LogMessage('ClimateControl', "RequestAction called: $Ident = $Value");
         
         switch ($Ident) {
-            case 'TempUp':
-                $this->ChangeTemperature(true);
-                SetValue($this->GetIDForIdent('TempUp'), false); // Button zurücksetzen
-                break;
-            case 'TempDown':
-                $this->ChangeTemperature(false);
-                SetValue($this->GetIDForIdent('TempDown'), false); // Button zurücksetzen
-                break;
             case 'IncreaseTemperature':
                 $this->ChangeTemperature(true);
                 break;
@@ -95,29 +76,8 @@ class ClimateControlTile extends IPSModule
                 throw new Exception('Invalid Ident');
         }
         
-        // HTML nach Aktion aktualisieren
-        $this->UpdateHTMLContent();
-    }
-
-    protected function ProcessHookData()
-    {
-        $action = $_GET['action'] ?? '';
-        
-        switch ($action) {
-            case 'tempup':
-                $this->ChangeTemperature(true);
-                break;
-            case 'tempdown':
-                $this->ChangeTemperature(false);
-                break;
-            case 'setmode':
-                $mode = (int)($_GET['mode'] ?? 0);
-                $this->SetMode($mode);
-                break;
-        }
-        
-        // Zurück zur HTML-Seite
-        echo '<script>window.history.back();</script>';
+        // Update der Visualisierung nach Aktion
+        $this->UpdateVisualizationValue($this->GetFullUpdateMessage());
     }
 
     public function TestFunction()
@@ -217,9 +177,18 @@ class ClimateControlTile extends IPSModule
         $this->SetBuffer('SimulatedMode', (string)$mode);
     }
 
+    private function GetFullUpdateMessage()
+    {
+        $data = $this->GetCurrentData();
+        return json_encode($data);
+    }
+
     public function GetVisualizationTile()
     {
         $data = $this->GetCurrentData();
+        
+        // Füge ein Skript hinzu, um beim Laden die Werte zu setzen
+        $initialHandling = '<script>handleMessage(' . $this->GetFullUpdateMessage() . ')</script>';
         
         $content = '<!DOCTYPE html>
 <html>
@@ -260,86 +229,78 @@ class ClimateControlTile extends IPSModule
         </div>
         
         <div class="controls">
-            <a href="/hook/climatecontrol' . $this->InstanceID . '?action=tempdown" class="temp-btn">−</a>
-            <a href="/hook/climatecontrol' . $this->InstanceID . '?action=tempup" class="temp-btn">+</a>
+            <button class="temp-btn" onclick="requestAction(\'DecreaseTemperature\', \'\')">−</button>
+            <button class="temp-btn" onclick="requestAction(\'IncreaseTemperature\', \'\')">+</button>
         </div>
         
         <div class="modes">';
         
         foreach ($data['modes'] as $mode) {
             $active = $mode['value'] === $data['mode'] ? ' active' : '';
-            $content .= '<a href="/hook/climatecontrol' . $this->InstanceID . '?action=setmode&mode=' . $mode['value'] . '" class="mode-btn' . $active . '">' . 
-                       htmlspecialchars($mode['name']) . '</a>';
+            $content .= '<button class="mode-btn' . $active . '" onclick="requestAction(\'SetMode\', ' . $mode['value'] . ')">' . 
+                       htmlspecialchars($mode['name']) . '</button>';
         }
         
         $content .= '</div>
     </div>
     
     <script>
-        function triggerSymconAction(action) {
-            console.log("Triggering Symcon action:", action);
-            
-            // Versuche verschiedene Methoden zur Symcon-Kommunikation
-            const instanceID = ' . $this->InstanceID . ';
-            
-            // Methode 1: Direkte IPS_RequestAction
-            if (typeof IPS_RequestAction === "function") {
-                console.log("Using direct IPS_RequestAction");
-                IPS_RequestAction(instanceID, action, true);
-                setTimeout(() => location.reload(), 1000);
-                return;
+        function requestAction(ident, value) {
+            // Standard Symcon RequestAction wie im Beispiel
+            if (typeof sendMessage === "function") {
+                sendMessage(JSON.stringify({
+                    Type: "RequestAction",
+                    InstanceID: ' . $this->InstanceID . ',
+                    Ident: ident,
+                    Value: value
+                }));
+            } else {
+                console.log("sendMessage not available");
             }
-            
-            // Methode 2: Parent window IPS_RequestAction
-            if (window.parent && typeof window.parent.IPS_RequestAction === "function") {
-                console.log("Using parent IPS_RequestAction");
-                window.parent.IPS_RequestAction(instanceID, action, true);
-                setTimeout(() => location.reload(), 1000);
-                return;
-            }
-            
-            // Methode 3: Variable direkt über Variable-ID setzen
-            const tempUpVarID = ' . $this->GetIDForIdent('TempUp') . ';
-            const tempDownVarID = ' . $this->GetIDForIdent('TempDown') . ';
-            
-            if (action === "TempUp" && typeof IPS_SetValue === "function") {
-                IPS_SetValue(tempUpVarID, true);
-                setTimeout(() => location.reload(), 1000);
-                return;
-            }
-            
-            if (action === "TempDown" && typeof IPS_SetValue === "function") {
-                IPS_SetValue(tempDownVarID, true);
-                setTimeout(() => location.reload(), 1000);
-                return;
-            }
-            
-            // Fallback: Page refresh um Änderungen zu sehen
-            console.log("No Symcon integration available, reloading page");
-            location.reload();
         }
         
-        function setMode(modeValue) {
-            currentMode = modeValue;
+        function handleMessage(data) {
+            // Nachrichten vom PHP-Backend verarbeiten
+            const message = typeof data === "string" ? JSON.parse(data) : data;
             
-            document.querySelectorAll(".mode-btn").forEach(btn => btn.classList.remove("active"));
-            event.target.classList.add("active");
-            
-            console.log("Mode changed to:", modeValue);
-            
-            try {
-                if (typeof IPS_RequestAction === "function") {
-                    IPS_RequestAction(' . $this->InstanceID . ', "SetMode", modeValue);
-                } else if (typeof window.parent.IPS_RequestAction === "function") {
-                    window.parent.IPS_RequestAction(' . $this->InstanceID . ', "SetMode", modeValue);
-                }
-            } catch (e) {
-                console.log("RequestAction not available, using local simulation");
+            // Temperatur-Updates
+            if (message.currentTemperature !== undefined) {
+                document.querySelector(".current-temp").innerHTML = 
+                    parseFloat(message.currentTemperature).toFixed(1) + 
+                    \'<span style="font-size: 0.6em; margin-left: 2px; color: #B3B3B3;">°C</span>\';
             }
+            
+            if (message.targetTemperature !== undefined) {
+                document.querySelector(".target-temp").innerHTML = 
+                    "🎯 " + parseFloat(message.targetTemperature).toFixed(1) + "°C";
+            }
+            
+            // Modus-Updates
+            if (message.mode !== undefined) {
+                document.querySelectorAll(".mode-btn").forEach(btn => {
+                    btn.classList.remove("active");
+                });
+                document.querySelectorAll(".mode-btn").forEach((btn, index) => {
+                    if (parseInt(btn.getAttribute("onclick").match(/\\d+/)[0]) === parseInt(message.mode)) {
+                        btn.classList.add("active");
+                    }
+                });
+            }
+            
+            // Kreis-Animation aktualisieren
+            updateCircle();
         }
         
         function updateCircle() {
-            const progress = Math.max(0, Math.min(1, (currentTargetTemp - 5) / (35 - 5)));
+            const currentTempEl = document.querySelector(".current-temp");
+            const targetTempEl = document.querySelector(".target-temp");
+            
+            if (!currentTempEl || !targetTempEl) return;
+            
+            const currentTemp = parseFloat(currentTempEl.textContent);
+            const targetTemp = parseFloat(targetTempEl.textContent.replace("🎯 ", ""));
+            
+            const progress = Math.max(0, Math.min(1, (currentTemp - 5) / (35 - 5)));
             const circumference = 471.24;
             const offset = circumference - (progress * circumference);
             document.getElementById("progressCircle").style.strokeDashoffset = offset;
@@ -348,17 +309,18 @@ class ClimateControlTile extends IPSModule
             document.getElementById("progressCircle").style.stroke = `hsl(${hue}, 80%, 60%)`;
             document.getElementById("tempMarker").style.fill = `hsl(${hue}, 80%, 60%)`;
             
-            const angle = (progress * 360) - 90;
+            const targetProgress = Math.max(0, Math.min(1, (targetTemp - 5) / (35 - 5)));
+            const angle = (targetProgress * 360) - 90;
             document.getElementById("tempMarker").style.transform = `rotate(${angle}deg)`;
         }
         
-        // Initial circle setup
+        // Initial setup
         updateCircle();
     </script>
 </body>
 </html>';
         
-        return $content;
+        return $content . $initialHandling;
     }
 
     public function GetCurrentData(): array
