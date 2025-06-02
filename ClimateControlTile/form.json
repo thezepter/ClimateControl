@@ -40,10 +40,12 @@
             "digits": 1
         },
         {
-            "type": "HTMLBox",
-            "name": "TileHTML",
-            "caption": "Klimasteuerung",
-            "value": ""
+            "type": "Label",
+            "caption": "Tile-Visualisierung"
+        },
+        {
+            "type": "Label", 
+            "caption": "Die Klimasteuerung ist über die Tile-Visualisierung im WebFront verfügbar."
         }
     ]
 }
