@@ -14,10 +14,22 @@ Eine moderne, kreisförmige Klimasteuerungs-Kachel für IP-Symcon mit dem HTML-S
 
 ## Installation
 
-1. **Repository herunterladen** oder als ZIP entpacken
-2. **Ordner nach Symcon kopieren**: Den gesamten Ordner in das Symcon-Modulverzeichnis kopieren
-3. **Modul hinzufügen**: In der Symcon-Konsole unter "Module" das neue Modul hinzufügen
-4. **Instanz erstellen**: Eine neue Instanz des Climate Control Tile Moduls erstellen
+### Manuelle Installation (empfohlen)
+
+1. **ClimateControlTile-Ordner kopieren**: Kopieren Sie den `ClimateControlTile` Ordner in das Symcon-Modulverzeichnis:
+   - Linux: `/var/lib/symcon/modules/`
+   - Windows: `C:\ProgramData\Symcon\modules\`
+
+2. **Symcon-Dienst neustarten**: Damit das neue Modul erkannt wird
+
+3. **Instanz erstellen**: 
+   - Symcon-Konsole → "Objekte hinzufügen" → "Instanz"
+   - Suchen Sie nach "ClimateControlTile" oder "CCT"
+   - Neue Instanz erstellen
+
+### Git-Repository Installation
+
+Falls Sie ein Git-Repository haben, können Sie die URL in Symcon unter "Module" → "Hinzufügen" eingeben.
 
 ## Konfiguration
 
