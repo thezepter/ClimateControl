@@ -17,6 +17,9 @@ class ClimateControlTile extends IPSModule
         $this->RegisterPropertyFloat('TemperatureStep', 0.5);
         $this->RegisterPropertyFloat('MinTemperature', 5.0);
         $this->RegisterPropertyFloat('MaxTemperature', 35.0);
+        
+        // Variable für HTML-Inhalt registrieren
+        $this->RegisterVariableString('HTMLContent', 'HTML Content', '~HTMLBox', 0);
     }
 
     public function ApplyChanges()
@@ -37,14 +40,24 @@ class ClimateControlTile extends IPSModule
         if ($modeVarID > 0) {
             $this->RegisterMessage($modeVarID, VM_UPDATE);
         }
+
+        // HTML-Inhalt initial setzen
+        $this->UpdateHTMLContent();
     }
 
     public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
     {
         switch ($Message) {
             case VM_UPDATE:
+                $this->UpdateHTMLContent();
                 break;
         }
+    }
+
+    private function UpdateHTMLContent()
+    {
+        $htmlContent = $this->GetVisualizationTile();
+        SetValue($this->GetIDForIdent('HTMLContent'), $htmlContent);
     }
 
     public function RequestAction($Ident, $Value)
@@ -62,6 +75,9 @@ class ClimateControlTile extends IPSModule
             default:
                 throw new Exception('Invalid Ident');
         }
+        
+        // HTML nach Aktion aktualisieren
+        $this->UpdateHTMLContent();
     }
 
     private function ChangeTemperature(bool $increase)
@@ -152,9 +168,10 @@ class ClimateControlTile extends IPSModule
     
     <script>
         function requestAction(ident, value) {
-            if (typeof window.parent.IPS_RequestAction === "function") {
+            if (typeof IPS_RequestAction === "function") {
+                IPS_RequestAction(' . $this->InstanceID . ', ident, value);
+            } else if (typeof window.parent.IPS_RequestAction === "function") {
                 window.parent.IPS_RequestAction(' . $this->InstanceID . ', ident, value);
-                setTimeout(() => location.reload(), 300);
             } else {
                 console.log("RequestAction:", ident, value);
             }
