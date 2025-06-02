@@ -1,0 +1,11 @@
+{
+    "id": "{B5A8E2F1-C4D7-4A6B-8E9C-1F3A5B7D9E2C}",
+    "name": "ClimateControlTile",
+    "type": 3,
+    "vendor": "",
+    "aliases": [],
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "CCT"
+}
