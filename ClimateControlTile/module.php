@@ -39,6 +39,9 @@ class ClimateControlTile extends IPSModule
         if ($modeVarID > 0) {
             $this->RegisterMessage($modeVarID, VM_UPDATE);
         }
+
+        // Initiales HTML laden
+        $this->UpdateWebFront();
     }
 
     public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
@@ -48,6 +51,17 @@ class ClimateControlTile extends IPSModule
                 $this->UpdateWebFront();
                 break;
         }
+    }
+
+    public function HandleMessage(string $data)
+    {
+        $message = json_decode($data, true);
+        
+        if (!isset($message['type']) || $message['type'] !== 'RequestAction') {
+            return;
+        }
+        
+        $this->RequestAction($message['ident'], $message['value']);
     }
 
     public function RequestAction($Ident, $Value)
@@ -99,11 +113,10 @@ class ClimateControlTile extends IPSModule
 
     private function UpdateWebFront()
     {
-        $data = $this->GetCurrentData();
-        $this->UpdateFormField('WebFrontContent', 'visible', true);
+        $this->UpdateFormField('TileHTML', 'value', $this->GetTileHTML());
     }
     
-    public function GetVisualizationTile()
+    public function GetTileHTML()
     {
         $data = $this->GetCurrentData();
         
@@ -111,8 +124,24 @@ class ClimateControlTile extends IPSModule
         $css = file_get_contents(__DIR__ . '/html/index.css');
         $js = file_get_contents(__DIR__ . '/html/index.js');
         
-        $content = str_replace('</head>', '<style>' . $css . '</style></head>', $html);
-        $content = str_replace('</body>', '<script>window.moduleData = ' . json_encode($data) . ';</script><script>' . $js . '</script></body>', $content);
+        // Ersetze relative Pfade durch absolute
+        $content = str_replace('<link rel="stylesheet" href="index.css">', '', $html);
+        $content = str_replace('<script src="index.js"></script>', '', $content);
+        
+        // Füge CSS und JS inline hinzu
+        $content = str_replace('</head>', '<style>' . $css . '</style></head>', $content);
+        $content = str_replace('</body>', '<script>
+            window.moduleData = ' . json_encode($data) . ';
+            // Override RequestAction für Symcon
+            window.RequestAction = function(ident, value) {
+                window.parent.postMessage({
+                    type: "RequestAction",
+                    instanceID: ' . $this->InstanceID . ',
+                    ident: ident,
+                    value: value
+                }, "*");
+            };
+        </script><script>' . $js . '</script></body>', $content);
         
         return $content;
     }

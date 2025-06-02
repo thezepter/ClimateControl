@@ -38,6 +38,12 @@
             "minimum": -20, 
             "maximum": 50,
             "digits": 1
+        },
+        {
+            "type": "HTMLBox",
+            "name": "TileHTML",
+            "caption": "Klimasteuerung",
+            "value": ""
         }
     ]
 }
