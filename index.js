@@ -21,7 +21,7 @@ class ClimateControl {
         
         this.minTemp = 5;
         this.maxTemp = 35;
-        this.ringLength = 445; // Ungefähre Länge des offenen Rings
+        this.ringLength = 267; // Länge des Halbkreis-Rings
         this.isDragging = false;
         
         // Modusspezifische Farben
@@ -109,19 +109,22 @@ class ClimateControl {
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
         
-        // Berechne Winkel relativ zur 12-Uhr Position
+        // Berechne Winkel relativ zum Zentrum
         const deltaX = clientX - centerX;
         const deltaY = clientY - centerY;
         let angle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
         
-        // Normalisiere Winkel: 0° = 12 Uhr, 180° = 6 Uhr (unten offen)
-        angle = angle + 90;
-        if (angle < 0) angle += 360;
+        // Normalisiere auf Ring-Bereich: links = 0°, rechts = 180° (oberer Halbkreis)
+        // Konvertiere zu 0-180° Bereich für oberen Halbkreis
+        angle = angle + 180; // -180 bis 180 -> 0 bis 360
         if (angle > 360) angle -= 360;
         
-        // Begrenze auf Ring-Bereich (0° bis 180°, unten offen)
-        if (angle > 180 && angle < 270) angle = 180;
-        if (angle > 270) angle = 0;
+        // Begrenze auf oberen Halbkreis (0° = links, 180° = rechts)
+        if (angle > 180) {
+            // Bestimme nähere Seite
+            if (angle > 270) angle = 0; // links
+            else angle = 180; // rechts
+        }
         
         // Konvertiere Winkel zu Temperatur
         const tempRange = this.maxTemp - this.minTemp;
@@ -247,12 +250,15 @@ class ClimateControl {
         const currentRange = Math.max(0, Math.min(tempRange, this.data.currentTemperature - this.minTemp));
         const progress = currentRange / tempRange;
         
-        // Berechne Ring-Fortschritt (0° bis 180°)
-        const ringProgress = progress * 0.5; // Halbkreis
-        const offset = this.ringLength - (ringProgress * this.ringLength);
+        // Berechne Ring-Fortschritt für Halbkreis
+        const offset = this.ringLength - (progress * this.ringLength);
         this.elements.progressRing.style.strokeDashoffset = offset;
         
         // Setze Farbe basierend auf Modus
+        this.updateModeColors();
+    }
+    
+    updateModeColors() {
         const modeColor = this.modeColors[this.data.mode] || this.modeColors[0];
         this.elements.progressRing.style.stroke = modeColor;
         this.elements.backgroundRing.style.stroke = `hsl(220 15% 25%)`;
@@ -271,11 +277,11 @@ class ClimateControl {
         const targetRange = Math.max(0, Math.min(tempRange, this.data.targetTemperature - this.minTemp));
         const progress = targetRange / tempRange;
         
-        // Berechne Position auf dem halben Ring (0° bis 180°)
-        const angle = progress * 180; // 0° = links, 180° = rechts
+        // Berechne Position auf dem oberen Halbkreis (0° = links, 180° = rechts)
+        const angle = progress * 180; // 0° bis 180°
         
-        // Konvertiere zu SVG Position
-        const radian = (angle - 90) * (Math.PI / 180); // -90° um bei 12 Uhr zu starten
+        // Konvertiere zu SVG Position für oberen Halbkreis
+        const radian = (angle - 180) * (Math.PI / 180); // Startpunkt links
         const centerX = 100;
         const centerY = 100;
         const radius = 85;
@@ -309,6 +315,7 @@ class ClimateControl {
         // Lokale Aktualisierung für bessere UX
         this.data.mode = modeValue;
         this.updateModeButtons();
+        this.updateModeColors(); // Sofortige Farbaktualisierung
     }
     
     // Symcon HandleMessage Handler
