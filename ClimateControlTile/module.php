@@ -6,7 +6,6 @@ class ClimateControlTile extends IPSModule
 {
     public function Create()
     {
-        // Nie mehr das parent aufrufen
         parent::Create();
 
         // Eigenschaften für Variable IDs
@@ -18,13 +17,10 @@ class ClimateControlTile extends IPSModule
         $this->RegisterPropertyFloat('TemperatureStep', 0.5);
         $this->RegisterPropertyFloat('MinTemperature', 5.0);
         $this->RegisterPropertyFloat('MaxTemperature', 35.0);
-        
-        // Keine WebHook-Registrierung für einfache Module
     }
 
     public function ApplyChanges()
     {
-        // Nie mehr das parent aufrufen
         parent::ApplyChanges();
 
         // Nachrichten für Variable Updates registrieren
@@ -41,31 +37,14 @@ class ClimateControlTile extends IPSModule
         if ($modeVarID > 0) {
             $this->RegisterMessage($modeVarID, VM_UPDATE);
         }
-
-        // Initiales HTML laden
-        $this->UpdateWebFront();
     }
 
     public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
     {
         switch ($Message) {
             case VM_UPDATE:
-                $this->UpdateWebFront();
                 break;
         }
-    }
-
-
-
-    public function HandleMessage(string $data)
-    {
-        $message = json_decode($data, true);
-        
-        if (!isset($message['type']) || $message['type'] !== 'RequestAction') {
-            return;
-        }
-        
-        $this->RequestAction($message['ident'], $message['value']);
     }
 
     public function RequestAction($Ident, $Value)
@@ -101,7 +80,6 @@ class ClimateControlTile extends IPSModule
         $newTemp = max($minTemp, min($maxTemp, $newTemp));
 
         RequestAction($targetTempVarID, $newTemp);
-        $this->UpdateWebFront();
     }
 
     private function SetMode(int $modeValue)
@@ -112,111 +90,99 @@ class ClimateControlTile extends IPSModule
         }
 
         RequestAction($modeVarID, $modeValue);
-        $this->UpdateWebFront();
     }
 
-    private function UpdateWebFront()
-    {
-        // Für einfache Tile-Visualisierung ohne WebHook
-        // Die Daten werden direkt über GetVisualizationTile() bereitgestellt
-    }
-    
-    // Hauptmethode für Symcon Tile-Visualisierung
     public function GetVisualizationTile()
     {
         $data = $this->GetCurrentData();
         
-        // Kompakte Tile-Version für Symcon WebFront
-        $tileHTML = '
-        <div style="width: 100%; height: 100%; background: #252A36; border-radius: 16px; padding: 20px; color: #F2F2F2; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif; position: relative; overflow: hidden;">
-            <!-- Temperatur Kreis -->
-            <div style="position: relative; width: 200px; height: 200px; margin: 0 auto 20px;">
-                <svg style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;" viewBox="0 0 200 200">
-                    <circle cx="100" cy="100" r="85" fill="none" stroke="#363B47" stroke-width="8"/>
-                    <circle id="progressCircle" cx="100" cy="100" r="85" fill="none" stroke="#4DA6FF" stroke-width="8" 
-                            stroke-linecap="round" stroke-dasharray="534.07" stroke-dashoffset="400" 
-                            transform="rotate(-90 100 100)" style="transition: all 0.3s ease;"/>
-                    <circle id="tempMarker" cx="100" cy="15" r="6" fill="#4DA6FF" transform="rotate(45 100 100)"/>
-                </svg>
-                
-                <!-- Temperatur Anzeige -->
-                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
-                    <div style="font-size: 36px; font-weight: 300; line-height: 1; margin-bottom: 5px;">' . number_format($data['currentTemperature'], 1) . '<span style="font-size: 0.6em; margin-left: 3px; color: #B3B3B3;">°C</span></div>
-                    <div style="font-size: 14px; color: #B3B3B3; display: flex; align-items: center; justify-content: center; gap: 3px;">
-                        <span>🎯</span>
-                        <span>' . number_format($data['targetTemperature'], 1) . '°C</span>
-                    </div>
-                </div>
+        $content = '<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .tile { width: 100%; height: 100%; background: #252A36; border-radius: 16px; padding: 20px; color: #F2F2F2; position: relative; overflow: hidden; box-sizing: border-box; }
+        .temp-circle { position: relative; width: 180px; height: 180px; margin: 0 auto 15px; }
+        .temp-display { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+        .current-temp { font-size: 32px; font-weight: 300; line-height: 1; margin-bottom: 5px; }
+        .target-temp { font-size: 12px; color: #B3B3B3; }
+        .controls { display: flex; justify-content: center; gap: 30px; margin-bottom: 15px; }
+        .temp-btn { width: 35px; height: 35px; border-radius: 50%; border: 2px solid #363B47; background: transparent; color: #F2F2F2; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.3s ease; }
+        .temp-btn:hover { border-color: #4DA6FF; background: rgba(77, 166, 255, 0.1); }
+        .modes { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; }
+        .mode-btn { padding: 6px 10px; border-radius: 6px; border: 1px solid #363B47; background: transparent; color: #B3B3B3; cursor: pointer; font-size: 11px; font-weight: 500; transition: all 0.3s ease; min-width: 40px; text-align: center; }
+        .mode-btn.active { background: #4DA6FF; border-color: #4DA6FF; color: white; }
+        .mode-btn:hover { border-color: #4DA6FF; color: #F2F2F2; }
+    </style>
+</head>
+<body>
+    <div class="tile">
+        <div class="temp-circle">
+            <svg style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;" viewBox="0 0 180 180">
+                <circle cx="90" cy="90" r="75" fill="none" stroke="#363B47" stroke-width="6"/>
+                <circle id="progressCircle" cx="90" cy="90" r="75" fill="none" stroke="#4DA6FF" stroke-width="6" 
+                        stroke-linecap="round" stroke-dasharray="471.24" stroke-dashoffset="300" 
+                        transform="rotate(-90 90 90)" style="transition: all 0.5s ease;"/>
+                <circle id="tempMarker" cx="90" cy="15" r="4" fill="#4DA6FF" transform="rotate(45 90 90)"/>
+            </svg>
+            
+            <div class="temp-display">
+                <div class="current-temp">' . number_format($data['currentTemperature'], 1) . '<span style="font-size: 0.6em; margin-left: 2px; color: #B3B3B3;">°C</span></div>
+                <div class="target-temp">🎯 ' . number_format($data['targetTemperature'], 1) . '°C</div>
             </div>
-            
-            <!-- Temperatur Steuerung -->
-            <div style="display: flex; justify-content: center; gap: 40px; margin-bottom: 20px;">
-                <button onclick="requestAction(\'DecreaseTemperature\', \'\')" 
-                        style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #363B47; background: transparent; color: #F2F2F2; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; transition: all 0.3s ease;"
-                        onmouseover="this.style.borderColor=\'#4DA6FF\'; this.style.background=\'rgba(77, 166, 255, 0.1)\'"
-                        onmouseout="this.style.borderColor=\'#363B47\'; this.style.background=\'transparent\'">−</button>
-                        
-                <button onclick="requestAction(\'IncreaseTemperature\', \'\')"
-                        style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #363B47; background: transparent; color: #F2F2F2; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.3s ease;"
-                        onmouseover="this.style.borderColor=\'#4DA6FF\'; this.style.background=\'rgba(77, 166, 255, 0.1)\'"
-                        onmouseout="this.style.borderColor=\'#363B47\'; this.style.background=\'transparent\'">+</button>
-            </div>
-            
-            <!-- Modi -->
-            <div style="display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;">';
-            
+        </div>
+        
+        <div class="controls">
+            <button class="temp-btn" onclick="requestAction(\'DecreaseTemperature\', \'\')">−</button>
+            <button class="temp-btn" onclick="requestAction(\'IncreaseTemperature\', \'\')">+</button>
+        </div>
+        
+        <div class="modes">';
+        
         foreach ($data['modes'] as $mode) {
-            $isActive = $mode['value'] === $data['mode'];
-            $tileHTML .= '<button onclick="requestAction(\'SetMode\', ' . $mode['value'] . ')" 
-                                 style="padding: 8px 12px; border-radius: 8px; border: 1px solid ' . ($isActive ? '#4DA6FF' : '#363B47') . '; 
-                                        background: ' . ($isActive ? '#4DA6FF' : 'transparent') . '; 
-                                        color: ' . ($isActive ? 'white' : '#B3B3B3') . '; cursor: pointer; font-size: 12px; 
-                                        font-weight: 500; transition: all 0.3s ease; min-width: 50px; text-align: center;">' . 
-                         htmlspecialchars($mode['name']) . '</button>';
+            $active = $mode['value'] === $data['mode'] ? ' active' : '';
+            $content .= '<button class="mode-btn' . $active . '" onclick="requestAction(\'SetMode\', ' . $mode['value'] . ')">' . 
+                       htmlspecialchars($mode['name']) . '</button>';
         }
         
-        $tileHTML .= '
-            </div>
-            
-            <script>
-                function requestAction(ident, value) {
-                    // Vereinfachte RequestAction für Symcon
-                    if (window.parent && window.parent.IPS_RequestAction) {
-                        window.parent.IPS_RequestAction(' . $this->InstanceID . ', ident, value);
-                    } else {
-                        console.log("RequestAction:", ident, value);
-                    }
-                }
-                
-                // Temperatur-Progress Animation
-                const currentTemp = ' . $data['currentTemperature'] . ';
-                const minTemp = 5;
-                const maxTemp = 35;
-                const progress = Math.max(0, Math.min(1, (currentTemp - minTemp) / (maxTemp - minTemp)));
-                const circumference = 534.07;
-                const offset = circumference - (progress * circumference);
-                
-                document.getElementById("progressCircle").style.strokeDashoffset = offset;
-                
-                // Temperatur-basierte Farbe
-                const hue = Math.round(200 - (progress * 200));
-                document.getElementById("progressCircle").style.stroke = `hsl(${hue}, 80%, 60%)`;
-                document.getElementById("tempMarker").style.fill = `hsl(${hue}, 80%, 60%)`;
-                
-                // Marker Position
-                const targetProgress = Math.max(0, Math.min(1, (' . $data['targetTemperature'] . ' - minTemp) / (maxTemp - minTemp)));
-                const angle = (targetProgress * 360) - 90;
-                document.getElementById("tempMarker").style.transform = `rotate(${angle}deg)`;
-                document.getElementById("tempMarker").style.transformOrigin = "100px 100px";
-            </script>
-        </div>';
-        
-        return $tileHTML;
-    }
+        $content .= '</div>
+    </div>
     
-    public function GetTileHTML()
-    {
-        return $this->GetVisualizationTile();
+    <script>
+        function requestAction(ident, value) {
+            if (typeof window.parent.IPS_RequestAction === "function") {
+                window.parent.IPS_RequestAction(' . $this->InstanceID . ', ident, value);
+                setTimeout(() => location.reload(), 300);
+            } else {
+                console.log("RequestAction:", ident, value);
+            }
+        }
+        
+        const currentTemp = ' . $data['currentTemperature'] . ';
+        const targetTemp = ' . $data['targetTemperature'] . ';
+        const minTemp = 5;
+        const maxTemp = 35;
+        
+        const progress = Math.max(0, Math.min(1, (currentTemp - minTemp) / (maxTemp - minTemp)));
+        const circumference = 471.24;
+        const offset = circumference - (progress * circumference);
+        document.getElementById("progressCircle").style.strokeDashoffset = offset;
+        
+        const hue = Math.round(200 - (progress * 200));
+        document.getElementById("progressCircle").style.stroke = `hsl(${hue}, 80%, 60%)`;
+        document.getElementById("tempMarker").style.fill = `hsl(${hue}, 80%, 60%)`;
+        
+        const targetProgress = Math.max(0, Math.min(1, (targetTemp - minTemp) / (maxTemp - minTemp)));
+        const angle = (targetProgress * 360) - 90;
+        document.getElementById("tempMarker").style.transform = `rotate(${angle}deg)`;
+        document.getElementById("tempMarker").style.transformOrigin = "90px 90px";
+    </script>
+</body>
+</html>';
+        
+        return $content;
     }
 
     public function GetCurrentData(): array
@@ -226,8 +192,8 @@ class ClimateControlTile extends IPSModule
         $modeVarID = $this->ReadPropertyInteger('ModeVariableID');
 
         $data = [
-            'currentTemperature' => 0,
-            'targetTemperature' => 20,
+            'currentTemperature' => 20.0,
+            'targetTemperature' => 22.0,
             'mode' => 0,
             'modes' => []
         ];
@@ -243,7 +209,6 @@ class ClimateControlTile extends IPSModule
         if ($modeVarID > 0 && IPS_VariableExists($modeVarID)) {
             $data['mode'] = GetValue($modeVarID);
             
-            // Hole die verfügbaren Modi aus dem Variablenprofil
             $variable = IPS_GetVariable($modeVarID);
             if ($variable['VariableCustomProfile'] !== '') {
                 $profile = IPS_GetVariableProfile($variable['VariableCustomProfile']);
@@ -260,6 +225,16 @@ class ClimateControlTile extends IPSModule
                     ];
                 }
             }
+        }
+
+        // Fallback Modi wenn keine Variable konfiguriert
+        if (empty($data['modes'])) {
+            $data['modes'] = [
+                ['value' => 0, 'name' => 'Aus', 'icon' => ''],
+                ['value' => 1, 'name' => 'Heizen', 'icon' => ''],
+                ['value' => 2, 'name' => 'Kühlen', 'icon' => ''],
+                ['value' => 3, 'name' => 'Auto', 'icon' => '']
+            ];
         }
 
         return $data;
@@ -307,6 +282,10 @@ class ClimateControlTile extends IPSModule
                     'minimum' => -20,
                     'maximum' => 50,
                     'digits' => 1
+                ],
+                [
+                    'type' => 'Label',
+                    'caption' => 'Die Klimasteuerung ist über die Tile-Visualisierung im WebFront verfügbar.'
                 ]
             ]
         ]);
