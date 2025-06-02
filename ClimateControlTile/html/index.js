@@ -60,8 +60,11 @@ class ClimateControl {
     
     loadInitialData() {
         // Lade initiale Daten vom Symcon Modul
-        if (typeof IPS_RequestAction === 'function') {
-            // Symcon Umgebung - lade aktuelle Daten
+        if (typeof window.moduleData !== 'undefined') {
+            // Symcon Umgebung - verwende übertragene Daten
+            this.updateData(window.moduleData);
+        } else if (typeof RequestAction === 'function') {
+            // Alternative Symcon Integration
             this.requestData();
         } else {
             // Entwicklungsumgebung - verwende Standardwerte
@@ -90,8 +93,10 @@ class ClimateControl {
     
     requestAction(ident, value) {
         try {
-            if (typeof IPS_RequestAction === 'function') {
-                IPS_RequestAction(ident, value);
+            if (typeof RequestAction === 'function') {
+                RequestAction(ident, value);
+            } else if (typeof window.parent !== 'undefined' && typeof window.parent.RequestAction === 'function') {
+                window.parent.RequestAction(ident, value);
             } else {
                 console.log(`RequestAction: ${ident} = ${value}`);
                 // Simulation für Entwicklung

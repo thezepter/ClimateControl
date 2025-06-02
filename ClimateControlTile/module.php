@@ -100,7 +100,21 @@ class ClimateControlTile extends IPSModule
     private function UpdateWebFront()
     {
         $data = $this->GetCurrentData();
-        $this->SendDataToChildren(json_encode($data));
+        $this->UpdateFormField('WebFrontContent', 'visible', true);
+    }
+    
+    public function GetVisualizationTile()
+    {
+        $data = $this->GetCurrentData();
+        
+        $html = file_get_contents(__DIR__ . '/html/index.html');
+        $css = file_get_contents(__DIR__ . '/html/index.css');
+        $js = file_get_contents(__DIR__ . '/html/index.js');
+        
+        $content = str_replace('</head>', '<style>' . $css . '</style></head>', $html);
+        $content = str_replace('</body>', '<script>window.moduleData = ' . json_encode($data) . ';</script><script>' . $js . '</script></body>', $content);
+        
+        return $content;
     }
 
     public function GetCurrentData(): array
