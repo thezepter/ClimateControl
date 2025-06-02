@@ -236,9 +236,8 @@ class ClimateControlTile extends IPSModule
         </div>
         
         <div class="controls">
-            <button class="temp-btn" onclick="testButton()">Test</button>
-            <button class="temp-btn" onclick="changeTemp(-1)">−</button>
-            <button class="temp-btn" onclick="changeTemp(1)">+</button>
+            <button class="temp-btn" onclick="triggerSymconAction(\'TempDown\')">−</button>
+            <button class="temp-btn" onclick="triggerSymconAction(\'TempUp\')">+</button>
         </div>
         
         <div class="modes">';
@@ -253,37 +252,47 @@ class ClimateControlTile extends IPSModule
     </div>
     
     <script>
-        let currentTargetTemp = ' . $data['targetTemperature'] . ';
-        let currentMode = ' . $data['mode'] . ';
-        
-        function testButton() {
-            alert("Test Button geklickt! InstanceID: ' . $this->InstanceID . '");
-            console.log("Test button clicked");
-        }
-        
-        function changeTemp(direction) {
-            currentTargetTemp += (direction * 0.5);
-            currentTargetTemp = Math.max(5, Math.min(35, currentTargetTemp));
+        function triggerSymconAction(action) {
+            console.log("Triggering Symcon action:", action);
             
-            document.querySelector(".current-temp").innerHTML = currentTargetTemp.toFixed(1) + \'<span style="font-size: 0.6em; margin-left: 2px; color: #B3B3B3;">°C</span>\';
-            document.querySelector(".target-temp").innerHTML = "🎯 " + currentTargetTemp.toFixed(1) + "°C";
+            // Versuche verschiedene Methoden zur Symcon-Kommunikation
+            const instanceID = ' . $this->InstanceID . ';
             
-            updateCircle();
-            console.log("Temperature changed to:", currentTargetTemp);
-            
-            // Versuche die konfigurierten Variablen direkt zu ändern
-            try {
-                // Für echte Symcon-Integration - Variable direkt setzen
-                const targetVarID = ' . $this->ReadPropertyInteger('TargetTemperatureVariableID') . ';
-                if (targetVarID > 0) {
-                    // Symcon Variable setzen (funktioniert nur wenn Modul korrekt konfiguriert)
-                    console.log("Setting Symcon variable", targetVarID, "to", currentTargetTemp);
-                } else {
-                    console.log("Keine Zielvariable konfiguriert - nutze lokale Simulation");
-                }
-            } catch (e) {
-                console.log("Symcon-Integration nicht verfügbar, nutze lokale Simulation");
+            // Methode 1: Direkte IPS_RequestAction
+            if (typeof IPS_RequestAction === "function") {
+                console.log("Using direct IPS_RequestAction");
+                IPS_RequestAction(instanceID, action, true);
+                setTimeout(() => location.reload(), 1000);
+                return;
             }
+            
+            // Methode 2: Parent window IPS_RequestAction
+            if (window.parent && typeof window.parent.IPS_RequestAction === "function") {
+                console.log("Using parent IPS_RequestAction");
+                window.parent.IPS_RequestAction(instanceID, action, true);
+                setTimeout(() => location.reload(), 1000);
+                return;
+            }
+            
+            // Methode 3: Variable direkt über Variable-ID setzen
+            const tempUpVarID = ' . $this->GetIDForIdent('TempUp') . ';
+            const tempDownVarID = ' . $this->GetIDForIdent('TempDown') . ';
+            
+            if (action === "TempUp" && typeof IPS_SetValue === "function") {
+                IPS_SetValue(tempUpVarID, true);
+                setTimeout(() => location.reload(), 1000);
+                return;
+            }
+            
+            if (action === "TempDown" && typeof IPS_SetValue === "function") {
+                IPS_SetValue(tempDownVarID, true);
+                setTimeout(() => location.reload(), 1000);
+                return;
+            }
+            
+            // Fallback: Page refresh um Änderungen zu sehen
+            console.log("No Symcon integration available, reloading page");
+            location.reload();
         }
         
         function setMode(modeValue) {
