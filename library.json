@@ -1,0 +1,26 @@
+{
+    "id": "{F4E8C2A1-D6B5-4C3E-9F7A-2B8E1D4C6A59}",
+    "name": "ClimateControlTile",
+    "author": "Custom Module",
+    "url": "https://github.com/custom/ClimateControlTile",
+    "version": "1.0.0",
+    "build": 0,
+    "date": 1735812000,
+    "description": "Eine kreisförmige Klimasteuerungs-Kachel mit Temperaturregelung und Modus-Auswahl",
+    "compatibility": {
+        "version": "5.5"
+    },
+    "modules": [
+        {
+            "id": "{B5A8E2F1-C4D7-4A6B-8E9C-1F3A5B7D9E2C}",
+            "name": "ClimateControlTile",
+            "type": 3,
+            "vendor": "",
+            "aliases": [],
+            "parentRequirements": [],
+            "childRequirements": [],
+            "implemented": [],
+            "prefix": "CCT"
+        }
+    ]
+}
